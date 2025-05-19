@@ -13,13 +13,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func signToken(data []byte, am *AuthModule) string {
+func signToken(data []byte, am *GinOAuth) string {
 	mac := hmac.New(sha256.New, am.jwtSecret)
 	mac.Write(data)
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
-func verifySignature(data, sig string, am *AuthModule) bool {
+func verifySignature(data, sig string, am *GinOAuth) bool {
 	mac := hmac.New(sha256.New, am.jwtSecret)
 	mac.Write([]byte(data))
 	expectedSignature := mac.Sum(nil)
@@ -40,7 +40,7 @@ func getSignPayload(value string) (string, string, error) {
 	return jsonData, sign, nil
 }
 
-func setVerifyCookie(c *gin.Context, am *AuthModule, data interface{}, cookie *http.Cookie) {
+func setVerifyCookie(c *gin.Context, am *GinOAuth, data interface{}, cookie *http.Cookie) {
 	b, _ := json.Marshal(data)
 	signed := string(b) + "." + signToken(b, am)
 
@@ -54,7 +54,7 @@ func setVerifyCookie(c *gin.Context, am *AuthModule, data interface{}, cookie *h
 	http.SetCookie(c.Writer, cookie)
 }
 
-func getVerifyCookie(c *gin.Context, am *AuthModule, key string, out interface{}) error {
+func getVerifyCookie(c *gin.Context, am *GinOAuth, key string, out interface{}) error {
 	cookie, err := c.Cookie(key)
 	if err != nil {
 		return fmt.Errorf("key not exist")

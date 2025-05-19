@@ -1,66 +1,59 @@
 package ginoauth
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func (am *AuthModule) OnCustomEndCallback(fn func(c *gin.Context) error) {
-	am.onCustomEndCallback = fn
-}
+var (
+	InvalidState        error = errors.New("invalid state")
+	FailedExchangeToken error = errors.New("failed to exchange token")
+)
 
-func (am *AuthModule) LoginHandler(c *gin.Context) {
-	am.Config.RedirectURL = am.RedirectCallback(c)
-	url := am.Config.AuthCodeURL("state-token")
-	c.Redirect(http.StatusTemporaryRedirect, url)
-}
-
-func (am *AuthModule) CallbackHandler(c *gin.Context) {
+func (am *GinOAuth) CheckStateAndExchangeToken(c *gin.Context) error {
 	state := c.Query("state")
 	if state != "state-token" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid state"})
-		return
+		return InvalidState
 	}
 
 	code := c.Query("code")
-	token, err := am.Config.Exchange(c, code)
+	token, err := am.config.Exchange(c, code)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to exchange token"})
-		return
+		return FailedExchangeToken
 	}
 
 	SetAuthCookies(c, token, am)
 	ClearUserDataCookies(c, am)
 
-	if am.onCustomEndCallback != nil {
-		if err := am.onCustomEndCallback(c); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-	} else {
-		c.JSON(http.StatusOK, gin.H{"status": "authorized"})
-	}
+	return err
 }
 
-func (am *AuthModule) LogoutHandler(c *gin.Context) {
+func (am *GinOAuth) LoginHandler(c *gin.Context) {
+	if am.getRedirectURL == nil {
+		c.Writer.Write([]byte("redirect nil"))
+		return
+	}
+	am.config.RedirectURL = am.getRedirectURL(c)
+	url := am.config.AuthCodeURL("state-token")
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func (am *GinOAuth) CallbackHandler(c *gin.Context) {
+	if err := am.CheckStateAndExchangeToken(c); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "authorized"})
+}
+
+func (am *GinOAuth) LogoutHandler(c *gin.Context) {
 	ClearAuthCookies(c, am)
 	ClearUserDataCookies(c, am)
 }
 
-func (am *AuthModule) RefreshHandler(c *gin.Context) {
-	token, err := GetAuthCookies(c, am)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		return
-	}
-
-	newToken, err := am.Config.TokenSource(c, token).Token()
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to refresh token"})
-		return
-	}
-
-	SetAuthCookies(c, newToken, am)
-	c.IndentedJSON(http.StatusOK, newToken)
+func (am *GinOAuth) SetCallbackRedirectURL(fn func(c *gin.Context) string) {
+	am.getRedirectURL = fn
 }

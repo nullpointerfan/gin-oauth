@@ -20,23 +20,22 @@ type Keys struct {
 }
 
 type OAuthConfig struct {
-	ClientID         string
-	ClientSecret     string
-	Scopes           []string
-	Secret           []byte
-	RedirectCallback func(c *gin.Context) string
+	ClientID            string
+	ClientSecret        string
+	Scopes              []string
+	Secret              []byte
+	CallbackRedirectURL func(c *gin.Context) string
 }
 
-type AuthModule struct {
-	jwtSecret           []byte
-	Config              *oauth2.Config
-	userInfoURL         string
-	httpClient          *http.Client
-	KEYS                *Keys
-	RedirectCallback    func(c *gin.Context) string
-	onUserAuthenticated func(*UserInfoResponse) error
-	onMiddleWareSuccess func(c *gin.Context) error
-	onCustomEndCallback func(c *gin.Context) error
+type GinOAuth struct {
+	jwtSecret             []byte
+	config                *oauth2.Config
+	userInfoURL           string
+	httpClient            *http.Client
+	keys                  *Keys
+	getRedirectURL        func(c *gin.Context) string
+	onUpdateUserInfo      func(*UserInfoResponse) error
+	onAuthenticateSuccess func(c *gin.Context) error
 }
 
 type TokenData struct {

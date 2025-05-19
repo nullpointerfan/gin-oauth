@@ -11,9 +11,9 @@ type CasdoorConfig struct {
 	CasdoorHost string
 }
 
-func NewCasdoorAuth(config CasdoorConfig) *AuthModule {
-	return &AuthModule{
-		Config: &oauth2.Config{
+func NewCasdoorAuth(config CasdoorConfig) *GinOAuth {
+	return &GinOAuth{
+		config: &oauth2.Config{
 			ClientID:     config.ClientID,
 			ClientSecret: config.ClientSecret,
 			Scopes:       append([]string{"email"}, config.Scopes...),
@@ -22,10 +22,10 @@ func NewCasdoorAuth(config CasdoorConfig) *AuthModule {
 				TokenURL: config.CasdoorHost + "/api/login/oauth/access_token",
 			},
 		},
-		jwtSecret:        config.Secret,
-		userInfoURL:      config.CasdoorHost + "/api/userinfo",
-		httpClient:       http.DefaultClient,
-		KEYS:             getDefaultKeys(),
-		RedirectCallback: config.RedirectCallback,
+		jwtSecret:      config.Secret,
+		userInfoURL:    config.CasdoorHost + "/api/userinfo",
+		httpClient:     http.DefaultClient,
+		keys:           getDefaultKeys(),
+		getRedirectURL: config.CallbackRedirectURL,
 	}
 }
