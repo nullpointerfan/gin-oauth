@@ -10,6 +10,7 @@ import (
 var (
 	InvalidState        error = errors.New("invalid state")
 	FailedExchangeToken error = errors.New("failed to exchange token")
+	RedirectURLNotSet   error = errors.New("redirect url not set")
 )
 
 func (am *GinOAuth) CheckStateAndExchangeToken(c *gin.Context) error {
@@ -30,12 +31,25 @@ func (am *GinOAuth) CheckStateAndExchangeToken(c *gin.Context) error {
 	return err
 }
 
-func (am *GinOAuth) LoginHandler(c *gin.Context) {
+func (am *GinOAuth) getRedirect(c *gin.Context) (string, error) {
 	if am.getRedirectURL == nil {
-		c.Writer.Write([]byte("redirect nil"))
+		if am.staticRedirectURL == "" {
+			return "", RedirectURLNotSet
+		} else {
+			return am.staticRedirectURL, nil
+		}
+	} else {
+		return am.getRedirectURL(c), nil
+	}
+}
+
+func (am *GinOAuth) LoginHandler(c *gin.Context) {
+	redirectUrl, err := am.getRedirect(c)
+	if err != nil {
+		c.Writer.Write([]byte(err.Error()))
 		return
 	}
-	am.config.RedirectURL = am.getRedirectURL(c)
+	am.config.RedirectURL = redirectUrl
 	url := am.config.AuthCodeURL("state-token")
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }

@@ -22,10 +22,11 @@ func NewCasdoorAuth(config CasdoorConfig) *GinOAuth {
 				TokenURL: config.CasdoorHost + "/api/login/oauth/access_token",
 			},
 		},
-		jwtSecret:      config.Secret,
-		userInfoURL:    config.CasdoorHost + "/api/userinfo",
-		httpClient:     http.DefaultClient,
-		keys:           getDefaultKeys(),
-		getRedirectURL: config.CallbackRedirectURL,
+		jwtSecret:         config.Secret,
+		userInfoURL:       config.CasdoorHost + "/api/userinfo",
+		httpClient:        http.DefaultClient,
+		keys:              getDefaultKeys(),
+		staticRedirectURL: config.RedirectURL,
+		getRedirectURL:    config.CallbackRedirectURL,
 	}
 }

@@ -24,6 +24,7 @@ type OAuthConfig struct {
 	ClientSecret        string
 	Scopes              []string
 	Secret              []byte
+	RedirectURL         string
 	CallbackRedirectURL func(c *gin.Context) string
 }
 
@@ -33,6 +34,7 @@ type GinOAuth struct {
 	userInfoURL           string
 	httpClient            *http.Client
 	keys                  *Keys
+	staticRedirectURL     string
 	getRedirectURL        func(c *gin.Context) string
 	onUpdateUserInfo      func(*UserInfoResponse) error
 	onAuthenticateSuccess func(c *gin.Context) error

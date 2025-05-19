@@ -25,9 +25,10 @@ func NewGoogleAuth(config GoogleConfig) *GinOAuth {
 				AuthStyle:     google.Endpoint.AuthStyle,
 			},
 		},
-		userInfoURL:    "https://www.googleapis.com/oauth2/v2/userinfo",
-		httpClient:     http.DefaultClient,
-		keys:           getDefaultKeys(),
-		getRedirectURL: config.CallbackRedirectURL,
+		userInfoURL:       "https://www.googleapis.com/oauth2/v2/userinfo",
+		httpClient:        http.DefaultClient,
+		keys:              getDefaultKeys(),
+		staticRedirectURL: config.RedirectURL,
+		getRedirectURL:    config.CallbackRedirectURL,
 	}
 }
