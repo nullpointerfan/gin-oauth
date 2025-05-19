@@ -11,10 +11,10 @@ type GoogleConfig struct {
 	OAuthConfig
 }
 
-func NewGoogleAuth(config GoogleConfig) *AuthModule {
-	return &AuthModule{
+func NewGoogleAuth(config GoogleConfig) *GinOAuth {
+	return &GinOAuth{
 		jwtSecret: config.Secret,
-		Config: &oauth2.Config{
+		config: &oauth2.Config{
 			ClientID:     config.ClientID,
 			ClientSecret: config.ClientSecret,
 			Scopes:       append([]string{"https://www.googleapis.com/auth/userinfo.email "}, config.Scopes...),
@@ -25,9 +25,9 @@ func NewGoogleAuth(config GoogleConfig) *AuthModule {
 				AuthStyle:     google.Endpoint.AuthStyle,
 			},
 		},
-		userInfoURL:      "https://www.googleapis.com/oauth2/v2/userinfo",
-		httpClient:       http.DefaultClient,
-		KEYS:             getDefaultKeys(),
-		RedirectCallback: config.RedirectCallback,
+		userInfoURL:    "https://www.googleapis.com/oauth2/v2/userinfo",
+		httpClient:     http.DefaultClient,
+		keys:           getDefaultKeys(),
+		getRedirectURL: config.CallbackRedirectURL,
 	}
 }
