@@ -16,7 +16,7 @@
 ## Installation
 
 ```bash
-go get github.com/renk46/ginoauth
+go get github.com/nullpointerfan/gin-oauth
 ```
 
 ---
@@ -28,7 +28,7 @@ go get github.com/renk46/ginoauth
 #### For Google:
 ```go
 import (
-	"github.com/yourusername/ginoauth"
+	"github.com/nullpointerfan/gin-oauth"
 )
 
 cfg := ginoauth.GoogleConfig{
