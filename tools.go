@@ -3,6 +3,7 @@ package ginoauth
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -76,4 +77,34 @@ func GetUserData(c *gin.Context, token *oauth2.Token, am *GinOAuth) (*UserInfoRe
 
 func ClearUserDataCookies(c *gin.Context, am *GinOAuth) {
 	c.SetCookie(am.keys.COOKIE_USER, "", -1, "/", "", c.Request.TLS != nil, true)
+}
+
+func parseToken(c *gin.Context) (*oauth2.Token, error) {
+	bearer := c.Request.Header.Get("Authorization")
+	if bearer == "" {
+		return nil, fmt.Errorf("authorization header is missing")
+	}
+
+	array := strings.Fields(bearer)
+	if len(array) < 2 {
+		return nil, fmt.Errorf("invalid authorization header format")
+	}
+
+	tokenType := strings.ToLower(array[0])
+	if tokenType != "bearer" {
+		return nil, fmt.Errorf("unsupported token type: %s", array[0])
+	}
+
+	token := &oauth2.Token{
+		AccessToken: array[1],
+	}
+	return token, nil
+}
+
+func GetToken(c *gin.Context, am *GinOAuth) (*oauth2.Token, error) {
+	token, err := parseToken(c)
+	if err == nil {
+		return token, err
+	}
+	return GetAuthCookies(c, am)
 }

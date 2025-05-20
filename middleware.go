@@ -24,7 +24,7 @@ func (am *GinOAuth) OnAuthenticateSuccess(fn func(c *gin.Context) error) {
 }
 
 func (am *GinOAuth) Authenticate(c *gin.Context) {
-	token, err := GetAuthCookies(c, am)
+	token, err := GetToken(c, am)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
