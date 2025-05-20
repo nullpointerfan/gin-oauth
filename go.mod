@@ -1,4 +1,4 @@
-module github.com/renk46/gin-oauth
+module github.com/nullpointerfan/gin-oauth
 
 go 1.24.3
 
