@@ -1,4 +1,4 @@
-package ginoauth
+package internal
 
 import (
 	"net/http"
@@ -10,13 +10,15 @@ import (
 type KeyCookie string
 
 const (
-	TOKEN KeyCookie = "oauth_token"
-	USER  KeyCookie = "user"
+	TOKEN       KeyCookie = "oauth_token"
+	OAUTH_STATE KeyCookie = "oauth_state"
+	USER        KeyCookie = "user"
 )
 
 type Keys struct {
 	COOKIE_TOKEN string
 	COOKIE_USER  string
+	OAUTH_STATE  string
 }
 
 type OAuthConfig struct {
@@ -29,13 +31,13 @@ type OAuthConfig struct {
 }
 
 type GinOAuth struct {
-	jwtSecret             []byte
-	config                *oauth2.Config
-	userInfoURL           string
-	httpClient            *http.Client
-	keys                  *Keys
-	staticRedirectURL     string
-	getRedirectURL        func(c *gin.Context) string
+	JwtSecret             []byte
+	Config                *oauth2.Config
+	UserInfoURL           string
+	HttpClient            *http.Client
+	Keys                  *Keys
+	StaticRedirectURL     string
+	GetRedirectURL        func(c *gin.Context) string
 	onUpdateUserInfo      func(*UserInfoResponse) error
 	onAuthenticateSuccess func(c *gin.Context) error
 }

@@ -32,3 +32,5 @@ go.work
 *.log
 .qodo
 gen
+
+.ctxignore

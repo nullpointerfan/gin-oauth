@@ -1,20 +1,21 @@
-package ginoauth
+package provider
 
 import (
 	"net/http"
 
+	"github.com/nullpointerfan/gin-oauth/internal"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
 type GoogleConfig struct {
-	OAuthConfig
+	internal.OAuthConfig
 }
 
-func NewGoogleAuth(config GoogleConfig) *GinOAuth {
-	return &GinOAuth{
-		jwtSecret: config.Secret,
-		config: &oauth2.Config{
+func NewGoogleAuth(config GoogleConfig) *internal.GinOAuth {
+	return &internal.GinOAuth{
+		JwtSecret: config.Secret,
+		Config: &oauth2.Config{
 			ClientID:     config.ClientID,
 			ClientSecret: config.ClientSecret,
 			Scopes:       append([]string{"https://www.googleapis.com/auth/userinfo.email "}, config.Scopes...),
@@ -25,10 +26,10 @@ func NewGoogleAuth(config GoogleConfig) *GinOAuth {
 				AuthStyle:     google.Endpoint.AuthStyle,
 			},
 		},
-		userInfoURL:       "https://www.googleapis.com/oauth2/v2/userinfo",
-		httpClient:        http.DefaultClient,
-		keys:              getDefaultKeys(),
-		staticRedirectURL: config.RedirectURL,
-		getRedirectURL:    config.CallbackRedirectURL,
+		UserInfoURL:       "https://www.googleapis.com/oauth2/v2/userinfo",
+		HttpClient:        http.DefaultClient,
+		Keys:              internal.GetDefaultKeys(),
+		StaticRedirectURL: config.RedirectURL,
+		GetRedirectURL:    config.CallbackRedirectURL,
 	}
 }

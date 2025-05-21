@@ -1,4 +1,4 @@
-package ginoauth
+package internal
 
 import (
 	"context"
@@ -15,7 +15,7 @@ func (am *GinOAuth) refreshToken(oldToken *oauth2.Token) (*oauth2.Token, error) 
 	}
 
 	ctx := context.Background()
-	source := am.config.TokenSource(ctx, oldToken)
+	source := am.Config.TokenSource(ctx, oldToken)
 	return source.Token()
 }
 
@@ -40,14 +40,14 @@ func (am *GinOAuth) Authenticate(c *gin.Context) {
 
 		SetAuthCookies(c, token, am)
 	}
-	c.Set(am.keys.COOKIE_TOKEN, token)
+	c.Set(am.Keys.COOKIE_TOKEN, token)
 
 	userData, err := GetUserData(c, token, am)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	c.Set(am.keys.COOKIE_USER, userData)
+	c.Set(am.Keys.COOKIE_USER, userData)
 
 	if am.onAuthenticateSuccess != nil {
 		if err := am.onAuthenticateSuccess(c); err != nil {

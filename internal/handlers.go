@@ -1,8 +1,9 @@
-package ginoauth
+package internal
 
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,32 +15,38 @@ var (
 )
 
 func (am *GinOAuth) CheckStateAndExchangeToken(c *gin.Context) error {
+	expectedState, err := c.Cookie(am.Keys.OAUTH_STATE)
+	if err != nil || expectedState == "" {
+		return InvalidState
+	}
+
 	state := c.Query("state")
-	if state != "state-token" {
+	if state != expectedState {
 		return InvalidState
 	}
 
 	code := c.Query("code")
-	token, err := am.config.Exchange(c, code)
+	token, err := am.Config.Exchange(c, code)
 	if err != nil {
 		return FailedExchangeToken
 	}
 
 	SetAuthCookies(c, token, am)
 	ClearUserDataCookies(c, am)
+	SetCookie(c, am.Keys.OAUTH_STATE, "", time.Now().Add(-1*time.Second))
 
 	return err
 }
 
 func (am *GinOAuth) getRedirect(c *gin.Context) (string, error) {
-	if am.getRedirectURL == nil {
-		if am.staticRedirectURL == "" {
+	if am.GetRedirectURL == nil {
+		if am.StaticRedirectURL == "" {
 			return "", RedirectURLNotSet
 		} else {
-			return am.staticRedirectURL, nil
+			return am.StaticRedirectURL, nil
 		}
 	} else {
-		return am.getRedirectURL(c), nil
+		return am.GetRedirectURL(c), nil
 	}
 }
 
@@ -49,8 +56,10 @@ func (am *GinOAuth) LoginHandler(c *gin.Context) {
 		c.Writer.Write([]byte(err.Error()))
 		return
 	}
-	am.config.RedirectURL = redirectUrl
-	url := am.config.AuthCodeURL("state-token")
+	am.Config.RedirectURL = redirectUrl
+	state := "state-" + GenerateRandomState(16)
+	SetCookie(c, am.Keys.OAUTH_STATE, state, time.Now().Add(3600*time.Second))
+	url := am.Config.AuthCodeURL(state)
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
@@ -69,5 +78,5 @@ func (am *GinOAuth) LogoutHandler(c *gin.Context) {
 }
 
 func (am *GinOAuth) SetCallbackRedirectURL(fn func(c *gin.Context) string) {
-	am.getRedirectURL = fn
+	am.GetRedirectURL = fn
 }

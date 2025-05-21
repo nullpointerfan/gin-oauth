@@ -1,4 +1,4 @@
-package ginoauth
+package internal
 
 import (
 	"crypto/hmac"
@@ -11,16 +11,17 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nullpointerfan/gin-oauth/internal/utils"
 )
 
 func signToken(data []byte, am *GinOAuth) string {
-	mac := hmac.New(sha256.New, am.jwtSecret)
+	mac := hmac.New(sha256.New, am.JwtSecret)
 	mac.Write(data)
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
 func verifySignature(data, sig string, am *GinOAuth) bool {
-	mac := hmac.New(sha256.New, am.jwtSecret)
+	mac := hmac.New(sha256.New, am.JwtSecret)
 	mac.Write([]byte(data))
 	expectedSignature := mac.Sum(nil)
 	signature, err := hex.DecodeString(sig)
@@ -44,7 +45,7 @@ func setVerifyCookie(c *gin.Context, am *GinOAuth, data interface{}, cookie *htt
 	b, _ := json.Marshal(data)
 	signed := string(b) + "." + signToken(b, am)
 
-	compressedToken, err := CompressJWT(signed)
+	compressedToken, err := utils.CompressJWT(signed)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to compress token"})
 		return
@@ -60,7 +61,7 @@ func getVerifyCookie(c *gin.Context, am *GinOAuth, key string, out interface{}) 
 		return fmt.Errorf("key not exist")
 	}
 
-	cookie, err = DecompressJWT(cookie)
+	cookie, err = utils.DecompressJWT(cookie)
 	if err != nil {
 		return fmt.Errorf("failed to decompress token")
 	}

@@ -1,4 +1,4 @@
-package ginoauth
+package utils
 
 import (
 	"bytes"

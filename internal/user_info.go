@@ -1,4 +1,4 @@
-package ginoauth
+package internal
 
 import (
 	"context"
@@ -15,9 +15,9 @@ func (am *GinOAuth) OnUpdateUserInfo(fn OnUpdateUserInfoFunc) {
 	am.onUpdateUserInfo = fn
 }
 
-func (am *GinOAuth) getUserInfo(ctx context.Context, token *oauth2.Token) (*UserInfoResponse, error) {
-	client := am.config.Client(ctx, token)
-	req, _ := http.NewRequest("GET", am.userInfoURL, nil)
+func (am *GinOAuth) GetUserInfo(ctx context.Context, token *oauth2.Token) (*UserInfoResponse, error) {
+	client := am.Config.Client(ctx, token)
+	req, _ := http.NewRequest("GET", am.UserInfoURL, nil)
 	req = req.WithContext(ctx)
 
 	resp, err := client.Do(req)
