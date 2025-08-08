@@ -9,26 +9,26 @@ import (
 )
 
 var (
-	InvalidState        error = errors.New("invalid state")
-	FailedExchangeToken error = errors.New("failed to exchange token")
-	RedirectURLNotSet   error = errors.New("redirect url not set")
+	ErrInvalidState        error = errors.New("invalid state")
+	ErrFailedExchangeToken error = errors.New("failed to exchange token")
+	ErrRedirectURLNotSet   error = errors.New("redirect url not set")
 )
 
 func (am *GinOAuth) CheckStateAndExchangeToken(c *gin.Context) error {
 	expectedState, err := c.Cookie(am.Keys.OAUTH_STATE)
 	if err != nil || expectedState == "" {
-		return InvalidState
+		return ErrInvalidState
 	}
 
 	state := c.Query("state")
 	if state != expectedState {
-		return InvalidState
+		return ErrInvalidState
 	}
 
 	code := c.Query("code")
 	token, err := am.Config.Exchange(c, code)
 	if err != nil {
-		return FailedExchangeToken
+		return ErrFailedExchangeToken
 	}
 
 	SetAuthCookies(c, token, am)
@@ -41,7 +41,7 @@ func (am *GinOAuth) CheckStateAndExchangeToken(c *gin.Context) error {
 func (am *GinOAuth) getRedirect(c *gin.Context) (string, error) {
 	if am.GetRedirectURL == nil {
 		if am.StaticRedirectURL == "" {
-			return "", RedirectURLNotSet
+			return "", ErrRedirectURLNotSet
 		} else {
 			return am.StaticRedirectURL, nil
 		}

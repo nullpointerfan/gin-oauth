@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,9 +14,12 @@ import (
 
 func GetDefaultKeys() *Keys {
 	return &Keys{
-		COOKIE_TOKEN: string(TOKEN),
-		COOKIE_USER:  string(USER),
-		OAUTH_STATE:  string(OAUTH_STATE),
+		COOKIE_ACCESS_TOKEN:  string(COOKIE_ACCESS_TOKEN),
+		COOKIE_REFRESH_TOKEN: string(COOKIE_REFRESH_TOKEN),
+		COOKIE_EXPIRE_TOKEN:  string(COOKIE_EXPIRE_TOKEN),
+		TOKEN:                string(TOKEN),
+		USER:                 string(USER),
+		OAUTH_STATE:          string(OAUTH_STATE),
 	}
 }
 
@@ -31,13 +35,22 @@ func SetCookie(c *gin.Context, key, value string, expires time.Time) {
 }
 
 func SetAuthCookies(c *gin.Context, token *oauth2.Token, am *GinOAuth) {
-	data := TokenData{
-		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
-		Expiry:       token.Expiry.Unix(),
-	}
-	setVerifyCookie(c, am, data, &http.Cookie{
-		Name:     am.Keys.COOKIE_TOKEN,
+	setVerifyCookie(c, am, token.AccessToken, &http.Cookie{
+		Name:     am.Keys.COOKIE_ACCESS_TOKEN,
+		Expires:  time.Now().Add(3600 * time.Hour),
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   c.Request.TLS != nil,
+	})
+	setVerifyCookie(c, am, token.RefreshToken, &http.Cookie{
+		Name:     am.Keys.COOKIE_REFRESH_TOKEN,
+		Expires:  time.Now().Add(3600 * time.Hour),
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   c.Request.TLS != nil,
+	})
+	setVerifyCookie(c, am, token.Expiry.Unix(), &http.Cookie{
+		Name:     am.Keys.COOKIE_EXPIRE_TOKEN,
 		Expires:  time.Now().Add(3600 * time.Hour),
 		Path:     "/",
 		HttpOnly: true,
@@ -46,12 +59,22 @@ func SetAuthCookies(c *gin.Context, token *oauth2.Token, am *GinOAuth) {
 }
 
 func GetAuthCookies(c *gin.Context, am *GinOAuth) (*oauth2.Token, error) {
-	var tokenData TokenData
-	if err := getVerifyCookie(c, am, am.Keys.COOKIE_TOKEN, &tokenData); err != nil {
+	tokenData := oauth2.Token{}
+	if err := getVerifyCookie(c, am, am.Keys.COOKIE_ACCESS_TOKEN, &tokenData.AccessToken); err != nil {
 		return nil, fmt.Errorf("invalid token data")
 	}
-
-	expiry := time.Unix(tokenData.Expiry, 0)
+	if err := getVerifyCookie(c, am, am.Keys.COOKIE_REFRESH_TOKEN, &tokenData.RefreshToken); err != nil {
+		return nil, fmt.Errorf("invalid token data")
+	}
+	expiryStr := ""
+	if err := getVerifyCookie(c, am, am.Keys.COOKIE_EXPIRE_TOKEN, expiryStr); err != nil {
+		return nil, fmt.Errorf("invalid token data")
+	}
+	e, err := strconv.ParseInt(expiryStr, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid token data")
+	}
+	expiry := time.Unix(e, 0)
 	return &oauth2.Token{
 		AccessToken:  tokenData.AccessToken,
 		RefreshToken: tokenData.RefreshToken,
@@ -60,7 +83,9 @@ func GetAuthCookies(c *gin.Context, am *GinOAuth) (*oauth2.Token, error) {
 }
 
 func ClearAuthCookies(c *gin.Context, am *GinOAuth) {
-	c.SetCookie(am.Keys.COOKIE_TOKEN, "", -1, "/", "", c.Request.TLS != nil, true)
+	c.SetCookie(am.Keys.COOKIE_ACCESS_TOKEN, "", -1, "/", "", c.Request.TLS != nil, true)
+	c.SetCookie(am.Keys.COOKIE_REFRESH_TOKEN, "", -1, "/", "", c.Request.TLS != nil, true)
+	c.SetCookie(am.Keys.COOKIE_EXPIRE_TOKEN, "", -1, "/", "", c.Request.TLS != nil, true)
 }
 
 func setUserDataCookies(c *gin.Context, token *oauth2.Token, am *GinOAuth) (*UserInfoResponse, error) {
@@ -70,7 +95,7 @@ func setUserDataCookies(c *gin.Context, token *oauth2.Token, am *GinOAuth) (*Use
 	}
 
 	setVerifyCookie(c, am, userData, &http.Cookie{
-		Name:     am.Keys.COOKIE_USER,
+		Name:     am.Keys.USER,
 		Expires:  time.Now().Add(3600 * time.Hour),
 		Path:     "/",
 		HttpOnly: true,
@@ -82,14 +107,14 @@ func setUserDataCookies(c *gin.Context, token *oauth2.Token, am *GinOAuth) (*Use
 
 func GetUserData(c *gin.Context, token *oauth2.Token, am *GinOAuth) (*UserInfoResponse, error) {
 	var userData UserInfoResponse
-	if err := getVerifyCookie(c, am, am.Keys.COOKIE_USER, &userData); err != nil {
+	if err := getVerifyCookie(c, am, am.Keys.USER, &userData); err != nil {
 		return setUserDataCookies(c, token, am)
 	}
 	return &userData, nil
 }
 
 func ClearUserDataCookies(c *gin.Context, am *GinOAuth) {
-	c.SetCookie(am.Keys.COOKIE_USER, "", -1, "/", "", c.Request.TLS != nil, true)
+	c.SetCookie(am.Keys.USER, "", -1, "/", "", c.Request.TLS != nil, true)
 }
 
 func parseToken(c *gin.Context) (*oauth2.Token, error) {

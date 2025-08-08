@@ -10,15 +10,21 @@ import (
 type KeyCookie string
 
 const (
-	TOKEN       KeyCookie = "oauth_token"
-	OAUTH_STATE KeyCookie = "oauth_state"
-	USER        KeyCookie = "user"
+	COOKIE_ACCESS_TOKEN  KeyCookie = "access_token"
+	COOKIE_REFRESH_TOKEN KeyCookie = "refresh_token"
+	COOKIE_EXPIRE_TOKEN  KeyCookie = "expire_token"
+	TOKEN                KeyCookie = "token"
+	OAUTH_STATE          KeyCookie = "oauth_state"
+	USER                 KeyCookie = "user"
 )
 
 type Keys struct {
-	COOKIE_TOKEN string
-	COOKIE_USER  string
-	OAUTH_STATE  string
+	COOKIE_ACCESS_TOKEN  string
+	COOKIE_REFRESH_TOKEN string
+	COOKIE_EXPIRE_TOKEN  string
+	TOKEN                string
+	OAUTH_STATE          string
+	USER                 string
 }
 
 type OAuthConfig struct {
@@ -40,12 +46,6 @@ type GinOAuth struct {
 	GetRedirectURL        func(c *gin.Context) string
 	onUpdateUserInfo      func(*UserInfoResponse) error
 	onAuthenticateSuccess func(c *gin.Context) error
-}
-
-type TokenData struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token,omitempty"`
-	Expiry       int64  `json:"expiry"`
 }
 
 type UserInfoResponse struct {
