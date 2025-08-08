@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -106,7 +107,7 @@ func setUserDataCookies(c *gin.Context, token *oauth2.Token, am *GinOAuth) (*Use
 
 	setCookie(c, &http.Cookie{
 		Name:     am.Keys.USER,
-		Value:    string(bytes),
+		Value:    url.QueryEscape(string(bytes)),
 		Expires:  time.Now().Add(3600 * time.Hour),
 		Path:     "/",
 		HttpOnly: true,
