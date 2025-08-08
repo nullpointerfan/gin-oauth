@@ -3,17 +3,18 @@ package provider
 import (
 	"net/http"
 
-	"github.com/nullpointerfan/gin-oauth/internal"
+	ginoauth "github.com/nullpointerfan/gin-oauth"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
 type GoogleConfig struct {
-	internal.OAuthConfig
+	ginoauth.OAuthConfig
 }
 
-func NewGoogleAuth(config GoogleConfig) *internal.GinOAuth {
-	return &internal.GinOAuth{
+func NewGoogleAuth(config GoogleConfig) *ginoauth.GinOAuth {
+	return &ginoauth.GinOAuth{
 		JwtSecret: config.Secret,
 		Config: &oauth2.Config{
 			ClientID:     config.ClientID,
@@ -28,7 +29,7 @@ func NewGoogleAuth(config GoogleConfig) *internal.GinOAuth {
 		},
 		UserInfoURL:       "https://www.googleapis.com/oauth2/v2/userinfo",
 		HttpClient:        http.DefaultClient,
-		Keys:              internal.GetDefaultKeys(),
+		Keys:              ginoauth.GetDefaultKeys(),
 		StaticRedirectURL: config.RedirectURL,
 		GetRedirectURL:    config.CallbackRedirectURL,
 	}

@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
+	ginoauth "github.com/nullpointerfan/gin-oauth"
+
 	"github.com/gin-gonic/gin"
-	"github.com/nullpointerfan/gin-oauth/internal"
 )
 
 func setupTestContext() (*gin.Context, *httptest.ResponseRecorder) {
@@ -20,8 +21,8 @@ func setupTestContext() (*gin.Context, *httptest.ResponseRecorder) {
 }
 
 func TestGenerateRandomState(t *testing.T) {
-	state1 := internal.GenerateRandomState(16)
-	state2 := internal.GenerateRandomState(16)
+	state1 := ginoauth.GenerateRandomState(16)
+	state2 := ginoauth.GenerateRandomState(16)
 
 	if len(state1) != 16 {
 		t.Errorf("expected state length of 16, got %d", len(state1))
@@ -34,14 +35,14 @@ func TestGenerateRandomState(t *testing.T) {
 
 func TestInvalidState(t *testing.T) {
 	c, _ := setupTestContext()
-	am := &internal.GinOAuth{
-		Keys: &internal.Keys{
+	am := &ginoauth.GinOAuth{
+		Keys: &ginoauth.Keys{
 			OAUTH_STATE: "oauth_state",
 		},
 	}
 
 	expectedState := "correct-state"
-	internal.SetCookie(c, am.Keys.OAUTH_STATE, expectedState, time.Now().Add(3600*time.Second))
+	ginoauth.SetCookie(c, am.Keys.OAUTH_STATE, expectedState, time.Now().Add(3600*time.Second))
 
 	// Send wrong state
 	c.Request.Form = make(map[string][]string)
@@ -56,8 +57,8 @@ func TestInvalidState(t *testing.T) {
 
 func TestMissingStateInCookie(t *testing.T) {
 	c, _ := setupTestContext()
-	am := &internal.GinOAuth{
-		Keys: &internal.Keys{
+	am := &ginoauth.GinOAuth{
+		Keys: &ginoauth.Keys{
 			OAUTH_STATE: "oauth_state",
 		},
 	}

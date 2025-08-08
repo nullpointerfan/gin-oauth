@@ -1,6 +1,7 @@
-package internal
+package ginoauth
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -35,22 +36,25 @@ func SetCookie(c *gin.Context, key, value string, expires time.Time) {
 }
 
 func SetAuthCookies(c *gin.Context, token *oauth2.Token, am *GinOAuth) {
-	setVerifyCookie(c, am, token.AccessToken, &http.Cookie{
+	setCookie(c, &http.Cookie{
 		Name:     am.Keys.COOKIE_ACCESS_TOKEN,
+		Value:    token.AccessToken,
 		Expires:  time.Now().Add(3600 * time.Hour),
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   c.Request.TLS != nil,
 	})
-	setVerifyCookie(c, am, token.RefreshToken, &http.Cookie{
+	setCookie(c, &http.Cookie{
 		Name:     am.Keys.COOKIE_REFRESH_TOKEN,
+		Value:    token.RefreshToken,
 		Expires:  time.Now().Add(3600 * time.Hour),
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   c.Request.TLS != nil,
 	})
-	setVerifyCookie(c, am, token.Expiry.Unix(), &http.Cookie{
+	setCookie(c, &http.Cookie{
 		Name:     am.Keys.COOKIE_EXPIRE_TOKEN,
+		Value:    fmt.Sprintf("%v", token.Expiry.Unix()),
 		Expires:  time.Now().Add(3600 * time.Hour),
 		Path:     "/",
 		HttpOnly: true,
@@ -59,25 +63,26 @@ func SetAuthCookies(c *gin.Context, token *oauth2.Token, am *GinOAuth) {
 }
 
 func GetAuthCookies(c *gin.Context, am *GinOAuth) (*oauth2.Token, error) {
-	tokenData := oauth2.Token{}
-	if err := getVerifyCookie(c, am, am.Keys.COOKIE_ACCESS_TOKEN, &tokenData.AccessToken); err != nil {
-		return nil, fmt.Errorf("invalid token data")
-	}
-	if err := getVerifyCookie(c, am, am.Keys.COOKIE_REFRESH_TOKEN, &tokenData.RefreshToken); err != nil {
-		return nil, fmt.Errorf("invalid token data")
-	}
-	expiryStr := ""
-	if err := getVerifyCookie(c, am, am.Keys.COOKIE_EXPIRE_TOKEN, expiryStr); err != nil {
-		return nil, fmt.Errorf("invalid token data")
-	}
-	e, err := strconv.ParseInt(expiryStr, 10, 64)
+	access, err := getCookie(c, am.Keys.COOKIE_ACCESS_TOKEN)
 	if err != nil {
 		return nil, fmt.Errorf("invalid token data")
 	}
+	refresh, err := getCookie(c, am.Keys.COOKIE_REFRESH_TOKEN)
+	if err != nil {
+		return nil, fmt.Errorf("invalid token data")
+	}
+	expire, err := getCookie(c, am.Keys.COOKIE_EXPIRE_TOKEN)
+	if err != nil {
+		return nil, fmt.Errorf("invalid token data")
+	}
+	e, err := strconv.ParseInt(expire, 10, 64)
+	if err != nil {
+		return nil, err
+	}
 	expiry := time.Unix(e, 0)
 	return &oauth2.Token{
-		AccessToken:  tokenData.AccessToken,
-		RefreshToken: tokenData.RefreshToken,
+		AccessToken:  access,
+		RefreshToken: refresh,
 		Expiry:       expiry,
 	}, nil
 }
@@ -94,8 +99,14 @@ func setUserDataCookies(c *gin.Context, token *oauth2.Token, am *GinOAuth) (*Use
 		return nil, fmt.Errorf("failed to fetch user info from provider")
 	}
 
-	setVerifyCookie(c, am, userData, &http.Cookie{
+	bytes, err := json.Marshal(userData)
+	if err != nil {
+		return nil, err
+	}
+
+	setCookie(c, &http.Cookie{
 		Name:     am.Keys.USER,
+		Value:    string(bytes),
 		Expires:  time.Now().Add(3600 * time.Hour),
 		Path:     "/",
 		HttpOnly: true,
@@ -107,7 +118,12 @@ func setUserDataCookies(c *gin.Context, token *oauth2.Token, am *GinOAuth) (*Use
 
 func GetUserData(c *gin.Context, token *oauth2.Token, am *GinOAuth) (*UserInfoResponse, error) {
 	var userData UserInfoResponse
-	if err := getVerifyCookie(c, am, am.Keys.USER, &userData); err != nil {
+	userDataStr, err := getCookie(c, am.Keys.USER)
+	if err != nil {
+		return setUserDataCookies(c, token, am)
+	}
+	err = json.Unmarshal([]byte(userDataStr), &userData)
+	if err != nil {
 		return setUserDataCookies(c, token, am)
 	}
 	return &userData, nil
@@ -155,4 +171,16 @@ func GenerateRandomState(n int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func setCookie(c *gin.Context, cookie *http.Cookie) {
+	http.SetCookie(c.Writer, cookie)
+}
+
+func getCookie(c *gin.Context, key string) (string, error) {
+	cookie, err := c.Cookie(key)
+	if err != nil {
+		return cookie, fmt.Errorf("key not exist")
+	}
+	return cookie, nil
 }

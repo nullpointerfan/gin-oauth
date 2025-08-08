@@ -3,17 +3,18 @@ package provider
 import (
 	"net/http"
 
-	"github.com/nullpointerfan/gin-oauth/internal"
+	ginoauth "github.com/nullpointerfan/gin-oauth"
+
 	"golang.org/x/oauth2"
 )
 
 type CasdoorConfig struct {
-	internal.OAuthConfig
+	ginoauth.OAuthConfig
 	CasdoorHost string
 }
 
-func NewCasdoorAuth(config CasdoorConfig) *internal.GinOAuth {
-	return &internal.GinOAuth{
+func NewCasdoorAuth(config CasdoorConfig) *ginoauth.GinOAuth {
+	return &ginoauth.GinOAuth{
 		Config: &oauth2.Config{
 			ClientID:     config.ClientID,
 			ClientSecret: config.ClientSecret,
@@ -26,7 +27,7 @@ func NewCasdoorAuth(config CasdoorConfig) *internal.GinOAuth {
 		JwtSecret:         config.Secret,
 		UserInfoURL:       config.CasdoorHost + "/api/userinfo",
 		HttpClient:        http.DefaultClient,
-		Keys:              internal.GetDefaultKeys(),
+		Keys:              ginoauth.GetDefaultKeys(),
 		StaticRedirectURL: config.RedirectURL,
 		GetRedirectURL:    config.CallbackRedirectURL,
 	}

@@ -1,4 +1,4 @@
-package internal
+package ginoauth
 
 import (
 	"net/http"
